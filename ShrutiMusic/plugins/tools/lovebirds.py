@@ -3,7 +3,7 @@
 # Author: Nand Yaduwanshi 
 
 import random
-from pyrongo import filters
+from pyrogram import filters
 from ShrutiMusic import app
 from ShrutiMusic.core.mongo import mongodb
 from config import MONGO_DB_URI
