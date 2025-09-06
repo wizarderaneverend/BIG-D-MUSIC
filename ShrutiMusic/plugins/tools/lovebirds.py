@@ -8,12 +8,10 @@ from ShrutiMusic import app
 from ShrutiMusic.core.mongo import mongodb
 from config import MONGO_DB_URI
 
-# MongoDB Collections
 lovebirds_db = mongodb.lovebirds
 users_collection = lovebirds_db.users
 gifts_collection = lovebirds_db.gifts
 
-# Virtual gifts list with more variety
 GIFTS = {
     "🌹": {"name": "Rose", "cost": 10, "emoji": "🌹"},
     "🍫": {"name": "Chocolate", "cost": 20, "emoji": "🍫"},
@@ -90,7 +88,6 @@ async def balance(_, message):
     """
     await message.reply_text(balance_text, parse_mode="HTML")
 
-# Gift List
 @app.on_message(filters.command("gifts", prefixes=["/", "!", "."]))
 async def gift_list(_, message):
     text = "🎁 <b>Available Gifts:</b>\n\n"
@@ -106,7 +103,6 @@ async def gift_list(_, message):
     
     await message.reply_text(text, parse_mode="HTML")
 
-# Send Gift
 @app.on_message(filters.command("sendgift", prefixes=["/", "!", "."]))
 async def send_gift(_, message):
     try:
@@ -176,7 +172,6 @@ async def send_gift(_, message):
     except Exception as e:
         await message.reply_text(f"⚠️ <b>Error:</b> {str(e)}", parse_mode="HTML")
 
-# Claim gifts (when user joins and types any message)
 async def claim_pending_gifts(user_id, username):
     """Claim gifts that were sent to this user"""
     # Find gifts sent to this username that aren't claimed yet
@@ -202,7 +197,6 @@ async def claim_pending_gifts(user_id, username):
             )
             total_bonus += 5  # 5 bonus coins per gift
         
-        # Add bonus coins to receiver
         await users_collection.update_one(
             {"user_id": user_id},
             {"$inc": {"coins": total_bonus, "total_gifts_received": gift_count}}
@@ -212,7 +206,6 @@ async def claim_pending_gifts(user_id, username):
     
     return 0, 0
 
-# Enhanced Love Story Generator with more stories
 @app.on_message(filters.command("story", prefixes=["/", "!", "."]))
 async def love_story(_, message):
     try:
@@ -265,10 +258,8 @@ async def love_story(_, message):
             f"At a farmers market 🍎, <b>{name1}</b> and <b>{name2}</b> both reached for the last apple. They decided to share it, and ended up sharing a lifetime of sweetness 🍯❤️"
         ]
         
-        # Pick random story and add romantic ending
         story = random.choice(stories)
         
-        # Random romantic endings
         endings = [
             "\n\n💕 <i>And they lived happily ever after...</i>",
             "\n\n❤️ <i>True love always finds a way...</i>",
@@ -281,7 +272,6 @@ async def love_story(_, message):
         
         story += random.choice(endings)
         
-        # Add some romantic emojis
         romantic_header = random.choice([
             "💕 <b>Love Story</b> 💕",
             "❤️ <b>Tale of Love</b> ❤️", 
@@ -294,20 +284,17 @@ async def love_story(_, message):
         
         await message.reply_text(final_story, parse_mode="HTML")
         
-        # Give coins for using story command
         uid, _ = get_user_info(message)
         await update_user_coins(uid, 5)
         
     except Exception as e:
         await message.reply_text(f"⚠️ <b>Error:</b> {str(e)}", parse_mode="HTML")
 
-# View received gifts
 @app.on_message(filters.command(["mygifts", "received"], prefixes=["/", "!", "."]))
 async def my_gifts(_, message):
     uid, username = get_user_info(message)
     await get_user_data(uid)  # Ensure user exists
     
-    # Get received gifts
     gifts_received = await gifts_collection.find({"receiver_id": uid}).to_list(length=10)
     
     if not gifts_received:
@@ -324,7 +311,7 @@ async def my_gifts(_, message):
     
     await message.reply_text(gifts_text, parse_mode="HTML")
 
-# Leaderboard
+
 @app.on_message(filters.command(["top", "leaderboard"], prefixes=["/", "!", "."]))
 async def leaderboard(_, message):
     try:
@@ -348,15 +335,12 @@ async def leaderboard(_, message):
     except Exception as e:
         await message.reply_text(f"⚠️ <b>Error:</b> {str(e)}", parse_mode="HTML")
 
-# Auto coins on chat and gift claiming
 @app.on_message(filters.text & ~filters.command(["balance", "bal", "gifts", "sendgift", "story", "mygifts", "received", "top", "leaderboard"], prefixes=["/", "!", "."]))
 async def give_coins_and_claim_gifts(_, message):
     uid, username = get_user_info(message)
     
-    # Ensure user exists in database
     await get_user_data(uid)
     
-    # Check for pending gifts and claim them
     gift_count, bonus_coins = await claim_pending_gifts(uid, username)
     
     if gift_count > 0:
