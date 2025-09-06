@@ -337,8 +337,7 @@ async def leaderboard(_, message):
 
 @app.on_message(filters.text)
 async def give_coins_and_claim_gifts(_, message):
-    # agar ye command hai to ignore karo
-    if message.text.startswith(("/", "!", ".")):
+    if message.text and message.text.startswith(("/", "!", ".")):
         return  
 
     uid, username = get_user_info(message)
@@ -358,6 +357,6 @@ Use /mygifts to see your received gifts! 💝
         """
         await message.reply_text(claim_msg)
 
-    # Give coins randomly to avoid spam (20% chance)
+    # Random 20% chance for coin reward
     if random.randint(1, 100) <= 20:
-        await update_user_coins(uid, 1)  # 1 coin per message
+        await update_user_coins(uid, 1)
