@@ -86,7 +86,7 @@ async def balance(_, message):
 
 💡 <b>Tip:</b> Send messages to earn coins!
     """
-    await message.reply_text(balance_text, parse_mode="HTML")
+    await message.reply_text(balance_text)
 
 @app.on_message(filters.command("gifts", prefixes=["/", "!", "."]))
 async def gift_list(_, message):
@@ -101,14 +101,14 @@ async def gift_list(_, message):
     text += "\n📝 <b>Usage:</b> /sendgift @username GiftEmoji"
     text += "\n💡 <b>Example:</b> /sendgift @john 🌹"
     
-    await message.reply_text(text, parse_mode="HTML")
+    await message.reply_text(text)
 
 @app.on_message(filters.command("sendgift", prefixes=["/", "!", "."]))
 async def send_gift(_, message):
     try:
         parts = message.text.split(" ")
         if len(parts) < 3:
-            return await message.reply_text("❌ <b>Usage:</b> /sendgift @username GiftEmoji\n💡 <b>Example:</b> /sendgift @john 🌹", parse_mode="HTML")
+            return await message.reply_text("❌ <b>Usage:</b> /sendgift @username GiftEmoji\n💡 <b>Example:</b> /sendgift @john 🌹")
         
         target = parts[1].replace("@", "")
         gift_emoji = parts[2]
@@ -118,14 +118,14 @@ async def send_gift(_, message):
         
         # Check if gift exists
         if gift_emoji not in GIFTS:
-            return await message.reply_text("❌ <b>Invalid gift!</b> Use /gifts to see available gifts.", parse_mode="HTML")
+            return await message.reply_text("❌ <b>Invalid gift!</b> Use /gifts to see available gifts.")
         
         gift_info = GIFTS[gift_emoji]
         cost = gift_info["cost"]
         
         # Check if sender has enough coins
         if sender_data["coins"] < cost:
-            return await message.reply_text(f"😢 <b>Insufficient coins!</b>\n💰 You need {cost} coins but have {sender_data['coins']} coins.", parse_mode="HTML")
+            return await message.reply_text(f"😢 <b>Insufficient coins!</b>\n💰 You need {cost} coins but have {sender_data['coins']} coins.")
         
         # Deduct coins from sender
         await users_collection.update_one(
@@ -167,10 +167,10 @@ async def send_gift(_, message):
 💕 <i>Love is in the air!</i>
         """
         
-        await message.reply_text(success_msg, parse_mode="HTML")
+        await message.reply_text(success_msg)
         
     except Exception as e:
-        await message.reply_text(f"⚠️ <b>Error:</b> {str(e)}", parse_mode="HTML")
+        await message.reply_text(f"⚠️ <b>Error:</b> {str(e)}")
 
 async def claim_pending_gifts(user_id, username):
     """Claim gifts that were sent to this user"""
@@ -211,7 +211,7 @@ async def love_story(_, message):
     try:
         parts = message.text.split(" ", 2)
         if len(parts) < 3:
-            return await message.reply_text("❌ <b>Usage:</b> /story Name1 Name2\n💡 <b>Example:</b> /story Raj Priya", parse_mode="HTML")
+            return await message.reply_text("❌ <b>Usage:</b> /story Name1 Name2\n💡 <b>Example:</b> /story Raj Priya")
         
         name1, name2 = parts[1], parts[2]
         
@@ -282,13 +282,13 @@ async def love_story(_, message):
         
         final_story = f"{romantic_header}\n\n{story}"
         
-        await message.reply_text(final_story, parse_mode="HTML")
+        await message.reply_text(final_story)
         
         uid, _ = get_user_info(message)
         await update_user_coins(uid, 5)
         
     except Exception as e:
-        await message.reply_text(f"⚠️ <b>Error:</b> {str(e)}", parse_mode="HTML")
+        await message.reply_text(f"⚠️ <b>Error:</b> {str(e)}")
 
 @app.on_message(filters.command(["mygifts", "received"], prefixes=["/", "!", "."]))
 async def my_gifts(_, message):
@@ -298,7 +298,7 @@ async def my_gifts(_, message):
     gifts_received = await gifts_collection.find({"receiver_id": uid}).to_list(length=10)
     
     if not gifts_received:
-        await message.reply_text(f"📭 <b>{username}</b>, you haven't received any gifts yet!\n💡 Ask someone to send you gifts using /sendgift", parse_mode="HTML")
+        await message.reply_text(f"📭 <b>{username}</b>, you haven't received any gifts yet!\n💡 Ask someone to send you gifts using /sendgift")
         return
     
     gifts_text = f"🎁 <b>{username}'s Received Gifts:</b>\n\n"
@@ -309,7 +309,7 @@ async def my_gifts(_, message):
     total_gifts = await gifts_collection.count_documents({"receiver_id": uid})
     gifts_text += f"\n💝 <b>Total gifts received:</b> {total_gifts}"
     
-    await message.reply_text(gifts_text, parse_mode="HTML")
+    await message.reply_text(gifts_text)
 
 
 @app.on_message(filters.command(["top", "leaderboard"], prefixes=["/", "!", "."]))
@@ -319,7 +319,7 @@ async def leaderboard(_, message):
         top_users = await users_collection.find().sort("coins", -1).limit(10).to_list(length=10)
         
         if not top_users:
-            await message.reply_text("📊 No users found in leaderboard!", parse_mode="HTML")
+            await message.reply_text("📊 No users found in leaderboard!")
             return
         
         leaderboard_text = "🏆 <b>Top 10 Richest Users</b>\n\n"
@@ -330,10 +330,10 @@ async def leaderboard(_, message):
             medal = medals[i] if i < len(medals) else "🏅"
             leaderboard_text += f"{medal} <b>User {user['user_id']}</b> - {user['coins']} coins\n"
         
-        await message.reply_text(leaderboard_text, parse_mode="HTML")
+        await message.reply_text(leaderboard_text)
         
     except Exception as e:
-        await message.reply_text(f"⚠️ <b>Error:</b> {str(e)}", parse_mode="HTML")
+        await message.reply_text(f"⚠️ <b>Error:</b> {str(e)}")
 
 @app.on_message(filters.text & ~filters.command(["balance", "bal", "gifts", "sendgift", "story", "mygifts", "received", "top", "leaderboard"], prefixes=["/", "!", "."]))
 async def give_coins_and_claim_gifts(_, message):
@@ -352,7 +352,7 @@ async def give_coins_and_claim_gifts(_, message):
 
 Use /mygifts to see your received gifts! 💝
         """
-        await message.reply_text(claim_msg, parse_mode="HTML")
+        await message.reply_text(claim_msg)
     
     # Give coins randomly to avoid spam (20% chance)
     if random.randint(1, 100) <= 20:
