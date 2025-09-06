@@ -357,21 +357,30 @@ class YouTubeAPI:
                 return existing_file
                 
             ydl_optssx = {
-                "format": "bestaudio/best",
+                "format": "bestaudio[acodec!=opus]/bestaudio",
                 "outtmpl": "downloads/%(id)s.%(ext)s",
                 "geo_bypass": True,
                 "nocheckcertificate": True,
                 "quiet": True,
                 "cookiefile" : cookie_txt_file(),
                 "no_warnings": True,
+                "concurrent_fragment_downloads": 8,
+                "retries": 3,
+                "fragment_retries": 3,
+                "buffersize": 16384,
+                "prefer_ffmpeg": True,
             }
             x = yt_dlp.YoutubeDL(ydl_optssx)
-            info = x.extract_info(link, False)
-            xyz = os.path.join("downloads", f"{info['id']}.{info['ext']}")
-            if os.path.exists(xyz):
-                return xyz
-            x.download([link])
-            return xyz
+            try:
+                info = x.extract_info(link, download=False)
+                file_path = os.path.join("downloads", f"{info['id']}.{info['ext']}")
+                if os.path.exists(file_path):
+                    return file_path
+                x.download([link])
+                return file_path
+            except Exception as e:
+                print(f"Audio download error: {e}")
+                return None
 
         def video_dl():
             existing_file = check_existing_file(video_id, ["mp4", "webm", "mkv"], "video")
@@ -379,21 +388,44 @@ class YouTubeAPI:
                 return existing_file
                 
             ydl_optssx = {
-                "format": "(bestvideo[height<=?720][width<=?1280][ext=mp4])+(bestaudio[ext=m4a])",
+                "format": "best[height<=720][ext=mp4]/best[height<=480][ext=mp4]/best[ext=mp4]/18/best",
                 "outtmpl": "downloads/%(id)s.%(ext)s",
                 "geo_bypass": True,
                 "nocheckcertificate": True,
                 "quiet": True,
                 "cookiefile" : cookie_txt_file(),
                 "no_warnings": True,
+                "concurrent_fragment_downloads": 8,
+                "retries": 3,
+                "fragment_retries": 3,
+                "buffersize": 16384,
+                "ignoreerrors": False,
             }
             x = yt_dlp.YoutubeDL(ydl_optssx)
-            info = x.extract_info(link, False)
-            xyz = os.path.join("downloads", f"{info['id']}.{info['ext']}")
-            if os.path.exists(xyz):
-                return xyz
-            x.download([link])
-            return xyz
+            try:
+                info = x.extract_info(link, download=False)
+                if not info:
+                    print("No video info available")
+                    return None
+                file_path = os.path.join("downloads", f"{info['id']}.{info['ext']}")
+                if os.path.exists(file_path):
+                    return file_path
+                x.download([link])
+                return file_path
+            except Exception as e:
+                print(f"Video download error: {e}")
+                try:
+                    ydl_optssx["format"] = "worst[ext=mp4]/worst"
+                    x = yt_dlp.YoutubeDL(ydl_optssx)
+                    info = x.extract_info(link, download=False)
+                    if info:
+                        file_path = os.path.join("downloads", f"{info['id']}.{info['ext']}")
+                        if not os.path.exists(file_path):
+                            x.download([link])
+                        return file_path
+                except Exception as e2:
+                    print(f"Fallback video download failed: {e2}")
+                    return None
 
         def song_video_dl():
             custom_file_path = f"downloads/{title}.mp4"
@@ -413,6 +445,9 @@ class YouTubeAPI:
                 "cookiefile" : cookie_txt_file(),
                 "prefer_ffmpeg": True,
                 "merge_output_format": "mp4",
+                "concurrent_fragment_downloads": 8,
+                "retries": 2,
+                "fragment_retries": 2,
             }
             x = yt_dlp.YoutubeDL(ydl_optssx)
             x.download([link])
@@ -433,11 +468,14 @@ class YouTubeAPI:
                 "no_warnings": True,
                 "cookiefile" : cookie_txt_file(),
                 "prefer_ffmpeg": True,
+                "concurrent_fragment_downloads": 8,
+                "retries": 2,
+                "fragment_retries": 2,
                 "postprocessors": [
                     {
                         "key": "FFmpegExtractAudio",
                         "preferredcodec": "mp3",
-                        "preferredquality": "192",
+                        "preferredquality": "128",
                     }
                 ],
             }
@@ -466,7 +504,7 @@ class YouTubeAPI:
                     "--cookies",cookie_txt_file(),
                     "-g",
                     "-f",
-                    "18/best",
+                    "best[height<=720]/18/best",
                     f"{link}",
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
