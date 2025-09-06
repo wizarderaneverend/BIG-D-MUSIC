@@ -51,8 +51,8 @@ def cookie_txt_file():
     return f"""cookies/{str(cookie_txt_file).split("/")[-1]}"""
 
 
-def check_existing_file(video_id, file_types=None):
-    """Check if file already exists for given video_id"""
+def check_existing_file(video_id, file_types=None, media_type=None):
+    """Check if file already exists for given video_id and media type"""
     if file_types is None:
         file_types = ["mp3", "m4a", "webm", "mp4", "mkv"]
     
@@ -60,6 +60,12 @@ def check_existing_file(video_id, file_types=None):
     if not os.path.exists(download_folder):
         os.makedirs(download_folder, exist_ok=True)
         return None
+    
+    # If media_type is specified, filter file types accordingly
+    if media_type == "audio":
+        file_types = ["mp3", "m4a", "webm"]
+    elif media_type == "video":
+        file_types = ["mp4", "webm", "mkv"]
     
     for ext in file_types:
         file_path = os.path.join(download_folder, f"{video_id}.{ext}")
@@ -215,7 +221,7 @@ class YouTubeAPI:
         
         video_id = link.split('v=')[-1].split('&')[0]
         
-        existing_file = check_existing_file(video_id, ["mp4", "webm", "mkv"])
+        existing_file = check_existing_file(video_id, ["mp4", "webm", "mkv"], "video")
         if existing_file:
             return 1, existing_file
             
@@ -346,7 +352,7 @@ class YouTubeAPI:
         loop = asyncio.get_running_loop()
         
         def audio_dl():
-            existing_file = check_existing_file(video_id, ["mp3", "m4a", "webm"])
+            existing_file = check_existing_file(video_id, ["mp3", "m4a", "webm"], "audio")
             if existing_file:
                 return existing_file
                 
@@ -368,7 +374,7 @@ class YouTubeAPI:
             return xyz
 
         def video_dl():
-            existing_file = check_existing_file(video_id, ["mp4", "webm", "mkv"])
+            existing_file = check_existing_file(video_id, ["mp4", "webm", "mkv"], "video")
             if existing_file:
                 return existing_file
                 
@@ -451,7 +457,7 @@ class YouTubeAPI:
                 direct = True
                 downloaded_file = await loop.run_in_executor(None, video_dl)
             else:
-                existing_file = check_existing_file(video_id, ["mp4", "webm", "mkv"])
+                existing_file = check_existing_file(video_id, ["mp4", "webm", "mkv"], "video")
                 if existing_file:
                     return existing_file, False
                     
