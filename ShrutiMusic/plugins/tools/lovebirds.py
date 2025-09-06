@@ -335,7 +335,7 @@ async def leaderboard(_, message):
     except Exception as e:
         await message.reply_text(f"⚠️ <b>Error:</b> {str(e)}")
 
-@app.on_message(filters.text & ~filters.command(None, prefixes=["/", "!", "."]))
+@app.on_message(filters.text & ~filters.regex(r"^[/!.\-]"))
 async def give_coins_and_claim_gifts(_, message):
     uid, username = get_user_info(message)
 
