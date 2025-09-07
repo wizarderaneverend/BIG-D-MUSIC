@@ -19,7 +19,7 @@
 # Contact for permissions:
 # Email: badboy809075@gmail.com
 
-# ATLEAST GIVE CREDITS IF YOU STEALING :(((((((((((((((((((((((((((((((((((((
+# ATLEAST GIVE CREDITS IF YOU STEALING :
 # ELSE NO FURTHER PUBLIC THUMBNAIL UPDATES
 
 import os
@@ -85,7 +85,7 @@ def fit_title_two_lines(draw, text, max_width, font_path, start_size=58, min_siz
     f = ImageFont.truetype(font_path, min_size)
     return f, wrap_two_lines(draw, text, f, max_width)
 
-async def get_thumb(videoid: str):
+async def gen_thumb(videoid: str):
     url = f"https://www.youtube.com/watch?v={videoid}"
     try:
         results = VideosSearch(url, limit=1)
@@ -192,7 +192,7 @@ async def get_thumb(videoid: str):
         return str(out)
 
     except Exception as e:
-        print(f"[get_thumb Error] {e}")
+        print(f"[gen_thumb Error] {e}")
         traceback.print_exc()
         return None
 
@@ -203,7 +203,4 @@ async def get_thumb(videoid: str):
 # ©️ 2025 Nand Yaduwanshi (aka @NoxxOP)
 # 🔗 GitHub : https://github.com/NoxxOP/ShrutiMusic
 # 📢 Telegram Channel : https://t.me/ShrutiBots
-# ===========================================
-
-
-# ❤️ Love From ShrutiBots 
+# ==========================
