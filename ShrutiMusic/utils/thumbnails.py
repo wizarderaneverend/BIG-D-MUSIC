@@ -18,7 +18,7 @@
 #
 # Contact for permissions:
 # Email: badboy809075@gmail.com
-
+#
 # ATLEAST GIVE CREDITS IF YOU STEALING :
 # ELSE NO FURTHER PUBLIC THUMBNAIL UPDATES
 
@@ -43,12 +43,19 @@ TEXT_WHITE  = (245, 245, 245, 255)
 TEXT_SOFT   = (230, 230, 230, 255)
 TEXT_SHADOW = (0, 0, 0, 140)
 
-FONT_REGULAR = ImageFont.truetype("ShrutiMusic/assets/font2.ttf", 30)
-FONT_BOLD    = ImageFont.truetype("ShrutiMusic/assets/font3.ttf", 30)
+# Font paths
+FONT_REGULAR_PATH = "ShrutiMusic/assets/font2.ttf"
+FONT_BOLD_PATH    = "ShrutiMusic/assets/font3.ttf"
+
+# Default small-size loaded fonts (can reuse directly)
+FONT_REGULAR = ImageFont.truetype(FONT_REGULAR_PATH, 30)
+FONT_BOLD    = ImageFont.truetype(FONT_BOLD_PATH, 30)
+
 
 def change_image_size(max_w, max_h, image):
     ratio = min(max_w / image.size[0], max_h / image.size[1])
     return image.resize((int(image.size[0]*ratio), int(image.size[1]*ratio)), Image.LANCZOS)
+
 
 def wrap_two_lines(draw, text, font, max_width):
     words = text.split()
@@ -69,6 +76,7 @@ def wrap_two_lines(draw, text, font, max_width):
                 break
     return (line1 + ("\n" + line2 if line2 else "")).strip()
 
+
 def fit_title_two_lines(draw, text, max_width, font_path, start_size=58, min_size=30):
     size = start_size
     while size >= min_size:
@@ -84,6 +92,7 @@ def fit_title_two_lines(draw, text, max_width, font_path, start_size=58, min_siz
         size -= 1
     f = ImageFont.truetype(font_path, min_size)
     return f, wrap_two_lines(draw, text, f, max_width)
+
 
 async def gen_thumb(videoid: str):
     url = f"https://www.youtube.com/watch?v={videoid}"
@@ -145,7 +154,7 @@ async def gen_thumb(videoid: str):
         canvas.paste(art, (circle_x, circle_y), art)
 
         # top-left label
-        tl_font = ImageFont.truetype(FONT_BOLD, 34)
+        tl_font = ImageFont.truetype(FONT_BOLD_PATH, 34)
         draw.text((28+1, 18+1), "ShrutiMusic", fill=TEXT_SHADOW, font=tl_font)
         draw.text((28, 18), "ShrutiMusic", fill=TEXT_WHITE, font=tl_font)
 
@@ -154,7 +163,7 @@ async def gen_thumb(videoid: str):
         max_text_w = CANVAS_W - info_x - 48
 
         # NOW PLAYING
-        np_font = ImageFont.truetype(FONT_BOLD, 60)
+        np_font = ImageFont.truetype(FONT_BOLD_PATH, 60)
         np_text = "NOW PLAYING"
         np_w = draw.textlength(np_text, font=np_font)
         np_x = info_x + (max_text_w - np_w) // 2 - 95
@@ -163,13 +172,13 @@ async def gen_thumb(videoid: str):
         draw.text((np_x, np_y), np_text, fill=TEXT_WHITE, font=np_font)
 
         # TITLE
-        title_font, title_wrapped = fit_title_two_lines(draw, title, max_text_w, FONT_BOLD, start_size=30, min_size=30)
+        title_font, title_wrapped = fit_title_two_lines(draw, title, max_text_w, FONT_BOLD_PATH, start_size=30, min_size=30)
         title_y = np_y + 110   
         draw.multiline_text((info_x+2, title_y+2), title_wrapped, fill=TEXT_SHADOW, font=title_font, spacing=8)
         draw.multiline_text((info_x, title_y),     title_wrapped, fill=TEXT_WHITE,  font=title_font, spacing=8)
 
         # Meta lines
-        meta_font = ImageFont.truetype(FONT_REGULAR, 30)
+        meta_font = ImageFont.truetype(FONT_REGULAR_PATH, 30)
         line_gap = 46
         meta_start_y = title_y + 130  
         duration_label = duration
@@ -187,8 +196,11 @@ async def gen_thumb(videoid: str):
         out = CACHE_DIR / f"{videoid}_styled.png"
         canvas.save(out)
 
-        try: os.remove(thumb_path)
-        except: pass
+        try:
+            os.remove(thumb_path)
+        except:
+            pass
+
         return str(out)
 
     except Exception as e:
@@ -198,9 +210,8 @@ async def gen_thumb(videoid: str):
 
 
 # ©️ Copyright Reserved - @NoxxOP  Nand Yaduwanshi
-
 # ===========================================
 # ©️ 2025 Nand Yaduwanshi (aka @NoxxOP)
 # 🔗 GitHub : https://github.com/NoxxOP/ShrutiMusic
 # 📢 Telegram Channel : https://t.me/ShrutiBots
-# ==========================
+# ===========================================
