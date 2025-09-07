@@ -19,255 +19,180 @@
 # Contact for permissions:
 # Email: badboy809075@gmail.com
 
-
 # ATLEAST GIVE CREDITS IF YOU STEALING :(((((((((((((((((((((((((((((((((((((
 # ELSE NO FURTHER PUBLIC THUMBNAIL UPDATES
 
-import random
-import logging
 import os
-import re
-import aiofiles
 import aiohttp
-from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
+import aiofiles
+import traceback
+from pathlib import Path
+from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageEnhance
 from youtubesearchpython.__future__ import VideosSearch
 
-logging.basicConfig(level=logging.INFO)
+CACHE_DIR = Path("cache")
+CACHE_DIR.mkdir(exist_ok=True)
 
-def changeImageSize(maxWidth, maxHeight, image):
-    widthRatio = maxWidth / image.size[0]
-    heightRatio = maxHeight / image.size[1]
-    newWidth = int(widthRatio * image.size[0])
-    newHeight = int(heightRatio * image.size[1])
-    newImage = image.resize((newWidth, newHeight))
-    return newImage
+CANVAS_W, CANVAS_H = 1320, 760
+BG_BLUR = 16
+BG_BRIGHTNESS = 1  
 
-def truncate(text):
-    list = text.split(" ")
-    text1 = ""
-    text2 = ""    
-    for i in list:
-        if len(text1) + len(i) < 30:        
-            text1 += " " + i
-        elif len(text2) + len(i) < 30:       
-            text2 += " " + i
+LIME_BORDER = (158, 255, 49, 255)
+RING_COLOR  = (98, 193, 169, 255)
+TEXT_WHITE  = (245, 245, 245, 255)
+TEXT_SOFT   = (230, 230, 230, 255)
+TEXT_SHADOW = (0, 0, 0, 140)
 
-    text1 = text1.strip()
-    text2 = text2.strip()     
-    return [text1,text2]
+FONT_REGULAR = ImageFont.truetype("ShrutiMusic/assets/font2.ttf", 30)
+FONT_BOLD    = ImageFont.truetype("ShrutiMusic/assets/font3.ttf", 30)
 
-def random_color():
-    return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+def change_image_size(max_w, max_h, image):
+    ratio = min(max_w / image.size[0], max_h / image.size[1])
+    return image.resize((int(image.size[0]*ratio), int(image.size[1]*ratio)), Image.LANCZOS)
 
-def generate_gradient(width, height, start_color, end_color):
-    base = Image.new('RGBA', (width, height), start_color)
-    top = Image.new('RGBA', (width, height), end_color)
-    mask = Image.new('L', (width, height))
-    mask_data = []
-    for y in range(height):
-        mask_data.extend([int(60 * (y / height))] * width)
-    mask.putdata(mask_data)
-    base.paste(top, (0, 0), mask)
-    return base
-
-def add_border(image, border_width, border_color):
-    width, height = image.size
-    new_width = width + 2 * border_width
-    new_height = height + 2 * border_width
-    new_image = Image.new("RGBA", (new_width, new_height), border_color)
-    new_image.paste(image, (border_width, border_width))
-    return new_image
-
-def crop_center_circle(img, output_size, border, border_color, crop_scale=1.5):
-    half_the_width = img.size[0] / 2
-    half_the_height = img.size[1] / 2
-    larger_size = int(output_size * crop_scale)
-    img = img.crop(
-        (
-            half_the_width - larger_size/2,
-            half_the_height - larger_size/2,
-            half_the_width + larger_size/2,
-            half_the_height + larger_size/2
-        )
-    )
-    
-    img = img.resize((output_size - 2*border, output_size - 2*border))
-    
-    
-    final_img = Image.new("RGBA", (output_size, output_size), border_color)
-    
-    
-    mask_main = Image.new("L", (output_size - 2*border, output_size - 2*border), 0)
-    draw_main = ImageDraw.Draw(mask_main)
-    draw_main.ellipse((0, 0, output_size - 2*border, output_size - 2*border), fill=255)
-    
-    final_img.paste(img, (border, border), mask_main)
-    
-    
-    mask_border = Image.new("L", (output_size, output_size), 0)
-    draw_border = ImageDraw.Draw(mask_border)
-    draw_border.ellipse((0, 0, output_size, output_size), fill=255)
-    
-    result = Image.composite(final_img, Image.new("RGBA", final_img.size, (0, 0, 0, 0)), mask_border)
-    
-    return result
-
-def draw_text_with_shadow(background, draw, position, text, font, fill, shadow_offset=(3, 3), shadow_blur=5):
-    
-    shadow = Image.new('RGBA', background.size, (0, 0, 0, 0))
-    shadow_draw = ImageDraw.Draw(shadow)
-    
-    
-    shadow_draw.text(position, text, font=font, fill="black")
-    
-    
-    shadow = shadow.filter(ImageFilter.GaussianBlur(radius=shadow_blur))
-    
-    
-    background.paste(shadow, shadow_offset, shadow)
-    
-    
-    draw.text(position, text, font=font, fill=fill)
-
-async def gen_thumb(videoid: str):
-    try:
-        if os.path.isfile(f"cache/{videoid}_v4.png"):
-            return f"cache/{videoid}_v4.png"
-
-        url = f"https://www.youtube.com/watch?v={videoid}"
-        results = VideosSearch(url, limit=1)
-        for result in (await results.next())["result"]:
-            title = result.get("title")
-            if title:
-                title = re.sub("\W+", " ", title).title()
-            else:
-                title = "Unsupported Title"
-            duration = result.get("duration")
-            if not duration:
-                duration = "Live"
-            thumbnail_data = result.get("thumbnails")
-            if thumbnail_data:
-                thumbnail = thumbnail_data[0]["url"].split("?")[0]
-            else:
-                thumbnail = None
-            views_data = result.get("viewCount")
-            if views_data:
-                views = views_data.get("short")
-                if not views:
-                    views = "Unknown Views"
-            else:
-                views = "Unknown Views"
-            channel_data = result.get("channel")
-            if channel_data:
-                channel = channel_data.get("name")
-                if not channel:
-                    channel = "Unknown Channel"
-            else:
-                channel = "Unknown Channel"
-
-        
-        async with aiohttp.ClientSession() as session:
-            async with session.get(thumbnail) as resp:
-        
-                content = await resp.read()
-                if resp.status == 200:
-                    content_type = resp.headers.get('Content-Type')
-                    if 'jpeg' in content_type or 'jpg' in content_type:
-                        extension = 'jpg'
-                    elif 'png' in content_type:
-                        extension = 'png'
-                    else:
-                        logging.error(f"Unexpected content type: {content_type}")
-                        return None
-
-                    filepath = f"cache/thumb{videoid}.png"
-                    f = await aiofiles.open(filepath, mode="wb")
-                    await f.write(await resp.read())
-                    await f.close()
-                    # os.system(f"file {filepath}")
-                    
-        
-        image_path = f"cache/thumb{videoid}.png"
-        youtube = Image.open(image_path)
-        image1 = changeImageSize(1280, 720, youtube)
-        
-        image2 = image1.convert("RGBA")
-        background = image2.filter(filter=ImageFilter.BoxBlur(20))
-        enhancer = ImageEnhance.Brightness(background)
-        background = enhancer.enhance(0.6)
-
-        
-        start_gradient_color = random_color()
-        end_gradient_color = random_color()
-        gradient_image = generate_gradient(1280, 720, start_gradient_color, end_gradient_color)
-        background = Image.blend(background, gradient_image, alpha=0.2)
-        
-        draw = ImageDraw.Draw(background)
-        arial = ImageFont.truetype("ShrutiMusic/assets/font2.ttf", 30)
-        font = ImageFont.truetype("ShrutiMusic/assets/font.ttf", 30)
-        title_font = ImageFont.truetype("ShrutiMusic/assets/font3.ttf", 45)
-
-
-        circle_thumbnail = crop_center_circle(youtube, 400, 20, start_gradient_color)
-        circle_thumbnail = circle_thumbnail.resize((400, 400))
-        circle_position = (120, 160)
-        background.paste(circle_thumbnail, circle_position, circle_thumbnail)
-
-        text_x_position = 565
-        title1 = truncate(title)
-        draw_text_with_shadow(background, draw, (text_x_position, 180), title1[0], title_font, (255, 255, 255))
-        draw_text_with_shadow(background, draw, (text_x_position, 230), title1[1], title_font, (255, 255, 255))
-        draw_text_with_shadow(background, draw, (text_x_position, 320), f"{channel}  |  {views[:23]}", arial, (255, 255, 255))
-
-
-        line_length = 580  
-        line_color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-
-        if duration != "Live":
-            color_line_percentage = random.uniform(0.15, 0.85)
-            color_line_length = int(line_length * color_line_percentage)
-            white_line_length = line_length - color_line_length
-
-            start_point_color = (text_x_position, 380)
-            end_point_color = (text_x_position + color_line_length, 380)
-            draw.line([start_point_color, end_point_color], fill=line_color, width=9)
-        
-            start_point_white = (text_x_position + color_line_length, 380)
-            end_point_white = (text_x_position + line_length, 380)
-            draw.line([start_point_white, end_point_white], fill="white", width=8)
-        
-            circle_radius = 10 
-            circle_position = (end_point_color[0], end_point_color[1])
-            draw.ellipse([circle_position[0] - circle_radius, circle_position[1] - circle_radius,
-                      circle_position[0] + circle_radius, circle_position[1] + circle_radius], fill=line_color)
-    
+def wrap_two_lines(draw, text, font, max_width):
+    words = text.split()
+    line1, line2 = "", ""
+    for w in words:
+        test = (line1 + " " + w).strip()
+        if draw.textlength(test, font=font) <= max_width:
+            line1 = test
         else:
-            line_color = (255, 0, 0)
-            start_point_color = (text_x_position, 380)
-            end_point_color = (text_x_position + line_length, 380)
-            draw.line([start_point_color, end_point_color], fill=line_color, width=9)
-        
-            circle_radius = 10 
-            circle_position = (end_point_color[0], end_point_color[1])
-            draw.ellipse([circle_position[0] - circle_radius, circle_position[1] - circle_radius,
-                          circle_position[0] + circle_radius, circle_position[1] + circle_radius], fill=line_color)
+            break
+    remaining = text[len(line1):].strip()
+    if remaining:
+        for w in remaining.split():
+            test = (line2 + " " + w).strip()
+            if draw.textlength(test, font=font) <= max_width:
+                line2 = test
+            else:
+                break
+    return (line1 + ("\n" + line2 if line2 else "")).strip()
 
-        draw_text_with_shadow(background, draw, (text_x_position, 400), "00:00", arial, (255, 255, 255))
-        draw_text_with_shadow(background, draw, (1080, 400), duration, arial, (255, 255, 255))
-        
-        play_icons = Image.open("ShrutiMusic/assets/play_icons.png")
-        play_icons = play_icons.resize((580, 62))
-        background.paste(play_icons, (text_x_position, 450), play_icons)
+def fit_title_two_lines(draw, text, max_width, font_path, start_size=58, min_size=30):
+    size = start_size
+    while size >= min_size:
+        try:
+            f = ImageFont.truetype(font_path, size)
+        except:
+            size -= 1
+            continue
+        wrapped = wrap_two_lines(draw, text, f, max_width)
+        lines = wrapped.split("\n")
+        if len(lines) <= 2 and all(draw.textlength(l, font=f) <= max_width for l in lines):
+            return f, wrapped
+        size -= 1
+    f = ImageFont.truetype(font_path, min_size)
+    return f, wrap_two_lines(draw, text, f, max_width)
 
-        os.remove(f"cache/thumb{videoid}.png")
+async def get_thumb(videoid: str):
+    url = f"https://www.youtube.com/watch?v={videoid}"
+    try:
+        results = VideosSearch(url, limit=1)
+        result = (await results.next())["result"][0]
 
-        background_path = f"cache/{videoid}_v4.png"
-        background.save(background_path)
-        
-        return background_path
+        title    = result.get("title", "Unknown Title")
+        duration = result.get("duration", "Unknown")
+        thumburl = result["thumbnails"][0]["url"].split("?")[0]
+        views    = result.get("viewCount", {}).get("short", "Unknown Views")
+        channel  = result.get("channel", {}).get("name", "Unknown Channel")
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(thumburl) as resp:
+                if resp.status == 200:
+                    thumb_path = CACHE_DIR / f"thumb{videoid}.png"
+                    async with aiofiles.open(thumb_path, "wb") as f:
+                        await f.write(await resp.read())
+
+        base_img = Image.open(thumb_path).convert("RGBA")
+
+        # Background
+        bg = change_image_size(CANVAS_W, CANVAS_H, base_img).convert("RGBA")
+        bg = bg.filter(ImageFilter.GaussianBlur(BG_BLUR))
+        bg = ImageEnhance.Brightness(bg).enhance(BG_BRIGHTNESS)
+
+        canvas = Image.new("RGBA", (CANVAS_W, CANVAS_H), (0, 0, 0, 255))
+        canvas.paste(bg, (0, 0))
+        draw = ImageDraw.Draw(canvas)
+
+        # outer lime frame
+        frame_inset = 12
+        draw.rectangle(
+            [frame_inset//2, frame_inset//2, CANVAS_W - frame_inset//2, CANVAS_H - frame_inset//2],
+            outline=LIME_BORDER, width=frame_inset
+        )
+
+        # circular artwork
+        thumb_size = 470
+        ring_width = 20
+        circle_x = 92
+        circle_y = (CANVAS_H - thumb_size) // 2
+
+        circular_mask = Image.new("L", (thumb_size, thumb_size), 0)
+        mdraw = ImageDraw.Draw(circular_mask)
+        mdraw.ellipse((0, 0, thumb_size, thumb_size), fill=255)
+
+        art = base_img.resize((thumb_size, thumb_size))
+        art.putalpha(circular_mask)
+
+        ring_size = thumb_size + ring_width * 2
+        ring_img = Image.new("RGBA", (ring_size, ring_size), (0, 0, 0, 0))
+        rdraw = ImageDraw.Draw(ring_img)
+        ring_bbox = (ring_width//2, ring_width//2, ring_size - ring_width//2, ring_size - ring_width//2)
+        rdraw.ellipse(ring_bbox, outline=RING_COLOR, width=ring_width)
+
+        canvas.paste(ring_img, (circle_x - ring_width, circle_y - ring_width), ring_img)
+        canvas.paste(art, (circle_x, circle_y), art)
+
+        # top-left label
+        tl_font = ImageFont.truetype(FONT_BOLD, 34)
+        draw.text((28+1, 18+1), "ShrutiMusic", fill=TEXT_SHADOW, font=tl_font)
+        draw.text((28, 18), "ShrutiMusic", fill=TEXT_WHITE, font=tl_font)
+
+        # right text block
+        info_x = circle_x + thumb_size + 60
+        max_text_w = CANVAS_W - info_x - 48
+
+        # NOW PLAYING
+        np_font = ImageFont.truetype(FONT_BOLD, 60)
+        np_text = "NOW PLAYING"
+        np_w = draw.textlength(np_text, font=np_font)
+        np_x = info_x + (max_text_w - np_w) // 2 - 95
+        np_y = circle_y + 30  
+        draw.text((np_x+2, np_y+2), np_text, fill=TEXT_SHADOW, font=np_font)
+        draw.text((np_x, np_y), np_text, fill=TEXT_WHITE, font=np_font)
+
+        # TITLE
+        title_font, title_wrapped = fit_title_two_lines(draw, title, max_text_w, FONT_BOLD, start_size=30, min_size=30)
+        title_y = np_y + 110   
+        draw.multiline_text((info_x+2, title_y+2), title_wrapped, fill=TEXT_SHADOW, font=title_font, spacing=8)
+        draw.multiline_text((info_x, title_y),     title_wrapped, fill=TEXT_WHITE,  font=title_font, spacing=8)
+
+        # Meta lines
+        meta_font = ImageFont.truetype(FONT_REGULAR, 30)
+        line_gap = 46
+        meta_start_y = title_y + 130  
+        duration_label = duration
+        if duration and ":" in duration and "Min" not in duration and "min" not in duration:
+            duration_label = f"{duration} Mins"
+
+        def draw_meta(y, text):
+            draw.text((info_x+1, y+1), text, fill=TEXT_SHADOW, font=meta_font)
+            draw.text((info_x,   y),   text, fill=TEXT_SOFT,  font=meta_font)
+
+        draw_meta(meta_start_y + 0 * line_gap, f"Views : {views}")
+        draw_meta(meta_start_y + 1 * line_gap, f"Duration : {duration_label}")
+        draw_meta(meta_start_y + 2 * line_gap, f"Channel : {channel}")
+
+        out = CACHE_DIR / f"{videoid}_styled.png"
+        canvas.save(out)
+
+        try: os.remove(thumb_path)
+        except: pass
+        return str(out)
 
     except Exception as e:
-        logging.error(f"Error generating thumbnail for video {videoid}: {e}")
+        print(f"[get_thumb Error] {e}")
         traceback.print_exc()
         return None
 
