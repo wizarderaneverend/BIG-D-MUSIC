@@ -2,7 +2,7 @@ import os
 import cv2
 from PIL import Image
 from pyrogram import Client, filters
-from ShritiMusic import app
+from ShrutiMusic import app
 
 
 @app.on_message(filters.command("tiny"))
