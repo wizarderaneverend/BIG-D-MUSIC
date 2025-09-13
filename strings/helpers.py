@@ -352,8 +352,9 @@ HELP_34 = """ 🏷️ <b>WISH TAG HELP</b> 🌟
 
 <b>Note:</b> Only one tagging session can run per chat at a time 📌 """
 
-HELP_35 = """ <b>User Welcome Message</b>
-• /welcome on/off: Enable or Disable welcome message . """
+HELP_35 = """ <b>Welcome Message</b>
+• /welcome on/off: Enable or Disable welcome message .
+• /awelcome on/off: Enable or Disable Assistant welcome message ."""
 
 HELP_36 = """ 💑 <b>COUPLE OF THE DAY</b> 💖
 
